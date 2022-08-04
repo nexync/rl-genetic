@@ -10,6 +10,7 @@ class Minesweeper():
 		self.num_mines = num_mines
 		self.mine_indicator = mine_indicator
 		self.remaining_squares = board_length*board_width
+		self.episode = 0
 		self.environment = self.generate_environment(board_length, board_width, num_mines, mine_indicator)
 
 	def generate_environment(self,board_length, board_width, num_mines, mine_indicator):
@@ -85,6 +86,8 @@ class Minesweeper():
 
 	
 	def reveal_square(self, square):
+		if self.environment[square[0]][square[1]][1]:
+			return (-0.33, False)
 		directions = [(1,0), (-1,0), (0,1), (0,-1)]
 		seen = set()
 		qu = collections.deque()
@@ -94,12 +97,12 @@ class Minesweeper():
 			sq = qu.popleft()
 			if sq[0] >= 0 and sq[0] < self.board_length and sq[1] >= 0 and sq[1] < self.board_width:
 				if self.environment[sq[0]][sq[1]][1] == self.mine_indicator:
-					return (0, True)
+					return (-1, True)
 				if self.environment[sq[0]][sq[1]][0] == 0 and self.environment[sq[0]][sq[1]][1] != self.mine_indicator:
 					self.environment[sq[0]][sq[1]][0] = 1
 					self.remaining_squares -= 1
 					if self.remaining_squares == self.num_mines:
-						return (1, True)
+						return (10, True) #here you win
 					if self.environment[sq[0]][sq[1]][1] == 0:
 						for d in directions:
 							newx = sq[0] + d[0]
@@ -107,7 +110,7 @@ class Minesweeper():
 							if (newx, newy) not in seen:
 								seen.add((newx,newy))
 								qu.append((newx,newy))
-		return (1, False)
+		return (1, False) #here progress
 
 	def step(self, action):
 		reward, has_ended = self.reveal_square(action)
@@ -117,22 +120,9 @@ class Minesweeper():
 
 	def sample_random_action(self):
 		k = list(range(self.board_length*self.board_width))
-		random.shuffle(k)
-		for val in k:
-			if self.environment[val//self.board_width][val%self.board_width][0] == 0:
-				return val
-			else:
-				continue
+		return k[0]
 
 	def reset(self):
 		self.num_mines = self.initial_mines
 		self.remaining_squares = self.board_length*self.board_width
-		self.environment = self.generate_environment(self.board_length, self.board_width, self.num_mines, self.xmine_indicator)
-
-	def generate_mask(self):
-		mask = [[0] * self.board_width for _ in range(self.board_length)]
-		for j in range(self.board_length):
-			for k in range(self.board_width):
-				if self.environment[j][k][0] == 0:
-					mask[j][k] = 1
-		return mask
+		self.environment = self.generate_environment(self.board_length, self.board_width, self.num_mines, self.mine_indicator)
