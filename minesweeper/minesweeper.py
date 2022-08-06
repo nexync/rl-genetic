@@ -86,23 +86,29 @@ class Minesweeper():
 
 	
 	def reveal_square(self, square):
+		reward = 1
+		game_end = False
 		if self.environment[square[0]][square[1]][1]:
-			return (-0.33, False)
+			return (-0.33, False) #here you have hit mine already
 		directions = [(1,0), (-1,0), (0,1), (0,-1)]
 		seen = set()
 		qu = collections.deque()
 		seen.add((square//self.board_width, square%self.board_width))
-		qu.append((square//self.board_width, square%self.board_width))
+		qu.append((0, (square//self.board_width, square%self.board_width)))
 		while len(qu) > 0:
 			sq = qu.popleft()
 			if sq[0] >= 0 and sq[0] < self.board_length and sq[1] >= 0 and sq[1] < self.board_width:
 				if self.environment[sq[0]][sq[1]][1] == self.mine_indicator:
-					return (-1, True)
+					reward = -1
+					game_end = True #you have hit a mine :(
+					break
 				if self.environment[sq[0]][sq[1]][0] == 0 and self.environment[sq[0]][sq[1]][1] != self.mine_indicator:
 					self.environment[sq[0]][sq[1]][0] = 1
 					self.remaining_squares -= 1
 					if self.remaining_squares == self.num_mines:
-						return (10, True) #here you win
+						reward = 10
+						game_end = True #you have won
+						break
 					if self.environment[sq[0]][sq[1]][1] == 0:
 						for d in directions:
 							newx = sq[0] + d[0]
@@ -110,7 +116,7 @@ class Minesweeper():
 							if (newx, newy) not in seen:
 								seen.add((newx,newy))
 								qu.append((newx,newy))
-		return (1, False) #here progress
+		return (reward, game_end)
 
 	def step(self, action):
 		reward, has_ended = self.reveal_square(action)
